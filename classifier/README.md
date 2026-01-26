@@ -106,8 +106,8 @@ uvicorn app.main:app --reload
 
 ### 7. Открыть документацию
 
-- Swagger UI: http://localhost:8090/api/v1/docs
-- ReDoc: http://localhost:8090/api/v1/redoc
+- Swagger UI: http://localhost:8090/docs
+- ReDoc: http://localhost:8090/redoc
 
 ## API Эндпоинты
 
