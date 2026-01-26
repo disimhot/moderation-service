@@ -1,5 +1,6 @@
 # Initially taken from Github's Python gitignore file
 uv.lock
+weights
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -104,6 +105,8 @@ ENV/
 env.bak/
 venv.bak/
 .DS_Store
+mlruns
+checkpoints
 
 # Spyder project settings
 .spyderproject

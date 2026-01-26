@@ -39,28 +39,26 @@ services:
     networks:
       - backend_net
 
-#  classifier:
-#    image: '${DOCKER_IMAGE_CLASSIFIER?Variable not set}:${TAG:-latest}'
-#    ports:
-#      - "8090:8090"
-#    build:
-#      context: ./classifier
-#      dockerfile: Dockerfil"
-#    env_file:
-#      - ./.env
-#    environment:
-#      DATABASE_URL: postgresql://${PG_USER}:${PG_PASSWORD}@db:5432/${PG_DB}
-#    depends_on:
-#      db:
-#        condition: service_healthy
-#    restart: always
-#    networks:
-#      - backend_net
-#    logging:
-#      driver: "json-file"
-#      options:
-#        max-size: "10m"
-#        max-file: "5"
+  classifier:
+    image: '${DOCKER_IMAGE_CLASSIFIER?Variable not set}:${TAG:-latest}'
+    ports:
+      - "8090:8090"
+    build:
+      context: ./classifier
+      dockerfile: Dockerfile
+    env_file:
+      - ./.env
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: always
+    networks:
+      - backend_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
 
 networks:
   backend_net:

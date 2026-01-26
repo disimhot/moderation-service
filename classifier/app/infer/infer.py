@@ -75,7 +75,3 @@ def run_inference() -> dict:
         print(f"{key}: {value:.4f}")
 
     return results[0]
-
-
-if __name__ == "__main__":
-    run_inference()
