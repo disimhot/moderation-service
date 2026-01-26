@@ -1,0 +1,78 @@
+from collections import Counter
+
+import torch
+import torch.nn.functional as tf
+from torch import nn
+
+
+def compute_class_weights(labels: list[int], num_classes: int) -> torch.Tensor:
+    """
+    Compute class weights for handling imbalanced datasets.
+
+    Args:
+        labels: List of class labels
+        num_classes: Total number of classes
+
+    Returns:
+        Tensor of weights for each class
+    """
+    counts = Counter(labels)
+    total = len(labels)
+
+    weights = []
+    for i in range(num_classes):
+        count = counts.get(i, 1)
+        weight = total / (num_classes * count)
+        weights.append(weight)
+
+    return torch.tensor(weights, dtype=torch.float32)
+
+
+class FocalLoss(nn.Module):
+    """
+    Focal Loss for addressing class imbalance.
+
+    Reduces loss for well-classified examples, focusing on hard negatives.
+
+    Args:
+        alpha: Class weights tensor (optional)
+        gamma: Focusing parameter (default 2.0)
+        reduction: Reduction method ('mean', 'sum', 'none')
+    """
+
+    def __init__(
+        self,
+        alpha: torch.Tensor | None = None,
+        gamma: float = 2.0,
+        reduction: str = "mean",
+    ):
+        super().__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+        self.reduction = reduction
+
+    def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        """
+        Compute focal loss.
+
+        Args:
+            inputs: Predicted logits [batch_size, num_classes]
+            targets: Ground truth labels [batch_size]
+
+        Returns:
+            Computed focal loss
+        """
+        ce_loss = tf.cross_entropy(inputs, targets, reduction="none")
+        pt = torch.exp(-ce_loss)
+        focal_loss = ((1 - pt) ** self.gamma) * ce_loss
+
+        if self.alpha is not None:
+            alpha = self.alpha.to(inputs.device)
+            alpha_t = alpha[targets]
+            focal_loss = alpha_t * focal_loss
+
+        if self.reduction == "mean":
+            return focal_loss.mean()
+        if self.reduction == "sum":
+            return focal_loss.sum()
+        return focal_loss

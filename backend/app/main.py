@@ -3,10 +3,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .database.core import init_db
-from .auth.router import router as auth_router
-from .items.router import router as items_router
-from .users.router import router as users_router
 
 if settings.ENVIRONMENT == "dev":
     LOG_LEVEL = "debug"  # Set log level to debug for local development
@@ -37,13 +33,11 @@ if settings.all_cors_origins:
 
 # --- Routers ---
 # Resource routers (one or more)
-app.include_router(items_router, prefix=f"{settings.API_V1_STR}/items", tags=["Items"])
-app.include_router(users_router, prefix=f"{settings.API_V1_STR}/users", tags=["Users"])
 
 # Authorization router
-app.include_router(
-    auth_router, prefix=settings.AUTH_STR, tags=["Authorization & Profile"]
-)
+# app.include_router(
+#     auth_router, prefix=settings.AUTH_STR, tags=["Authorization & Profile"]
+# )
 
 
 # --- Root Endpoint ---
@@ -74,6 +68,6 @@ async def head_root():
 
 
 if __name__ == "__main__":
-    
+
     # Run the app with Uvicorn if this file is executed directly
     uvicorn.run(app, host=settings.HOST, port=settings.PORT, log_level=LOG_LEVEL)

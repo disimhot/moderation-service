@@ -18,37 +18,3 @@ OrganizationSlug = Annotated[
 ]
 
 Base = declarative_base()
-
-
-# SQLAlchemy models...
-class ProjectMixin(object):
-    """Project mixin for adding project relationships to models."""
-
-    @declared_attr
-    def project_id(cls):  # noqa
-        """Returns the project_id column."""
-        return Column(Integer, ForeignKey("project.id", ondelete="CASCADE"))
-
-    @declared_attr
-    def project(cls):
-        """Returns the project relationship."""
-        return relationship("Project")
-
-
-class TimeStampMixin(object):
-    """Timestamping mixin for created_at and updated_at fields."""
-
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    created_at._creation_order = 9998
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at._creation_order = 9998
-
-    @staticmethod
-    def _updated_at(mapper, connection, target):
-        """Updates the updated_at field to the current UTC time."""
-        target.updated_at = datetime.now(timezone.utc)
-
-    @classmethod
-    def __declare_last__(cls):
-        """Registers the before_update event to update the updated_at field."""
-        event.listen(cls, "before_update", cls._updated_at)

@@ -1,179 +1,162 @@
-# Full-Stack Template - Backend
+# Backend API
 
-## Overview
+## Обзор
 
-This backend provides a modular FastAPI application skeleton featuring user management, authentication (JWT / OAuth2 password flow), and CRUD operations for items.
+Минимальный FastAPI backend с базовой структурой. Авторизация и модуль users временно отключены (будут добавлены позже).
 
-## Structure
-
-High-level layout:
+## Структура проекта
 
 ```
-├── alembic/              # Database migration scripts
-│   ├── versions/       # Individual migration files
-│   ├── env.py          # Alembic environment configuration
-│   └── script.py.mako  # Migration script template
-├── scripts/
-│   └── restart.sh  # Script to restart backend container (init database, apply migrations)
-├── app
-│   ├── auth/               # Authentication & authorization layer
-│   │   ├── router.py       # /auth endpoints (token issuance, current user)
-│   │   ├── schemas.py      # Pydantic models for auth requests/responses
-│   │   ├── security.py     # Token creation/verification, password hashing utilities
-│   │   └── service.py      # Auth business logic (validate user, create tokens)
-│   ├── config.py           # Settings object (Pydantic BaseSettings -> env vars)
+├── alembic/                # Миграции базы данных
+│   ├── versions/           # Файлы миграций
+│   ├── env.py              # Конфигурация Alembic
+│   └── script.py.mako      # Шаблон миграций
+├── app/
+│   ├── auth/               # Авторизация (временно отключена)
+│   ├── classifier/         # Модуль классификатора (в разработке)
 │   ├── database/
-│   │   ├── seed.py         # Database seeding logic (create initial data)
-│   │   └── core.py         # Engine/session creation & session dependency
-│   ├── dependencies.py     # Cross-cutting FastAPI dependencies (get_db, get_current_user, etc.)
-│   ├── items/
-│   │   ├── models.py       # SQLAlchemy Item model(s)
-│   │   ├── router.py       # /items endpoints
-│   │   ├── schemas.py      # Pydantic item schemas
-│   │   └── service.py      # Item business logic
-│   ├── main.py             # FastAPI app factory / include routers / middleware
-│   ├── models.py           # Shared or base models (if any)
-│   ├── schemas.py          # Shared or base schemas (if any)
-│   └── users/
-│       ├── models.py       # SQLAlchemy User model
-│       ├── router.py       # /users endpoints (register, list, profile)
-│       ├── schemas.py      # User schemas
-│       └── service.py      # User domain logic
-├── alembic.ini             # Alembic configuration file
-├── Dockerfile              # Backend image build
-├── pyproject.toml          # Project metadata (editable install) + tooling (if configured)
-├── requirements.txt        # Pinned runtime deps
-└── tests
-    ├── conftest.py         # Shared pytest fixtures (test client, db session override)
-    ├── test_database.py    # DB layer tests
-    ├── test_items.py       # Item feature tests
-    └── test_users.py       # User feature tests
+│   │   ├── core.py         # Подключение к БД, сессии
+│   │   └── seed.py         # Начальные данные
+│   ├── config.py           # Настройки (из .env)
+│   ├── dependencies.py     # Зависимости FastAPI
+│   ├── main.py             # Точка входа приложения
+│   ├── models.py           # Базовые модели SQLAlchemy
+│   └── schemas.py          # Базовые Pydantic схемы
+├── scripts/
+│   └── prestart.sh         # Скрипт инициализации
+├── tests/                  # Тесты
+├── alembic.ini             # Конфиг Alembic
+├── pyproject.toml          # Зависимости проекта
+└── .env                    # Переменные окружения (создать вручную)
 ```
 
-### Request Lifecycle (Typical Authenticated Endpoint)
+## Быстрый старт (локально на Mac)
 
-1. Client sends HTTP request with Authorization: Bearer <JWT>
-2. FastAPI router function is matched (/items/...)
-3. Dependencies resolve (e.g., DB session, current user from token)
-4. Router delegates to service layer for business logic
-5. Service interacts with SQLAlchemy models via session
-6. Domain objects converted to Pydantic response schema
-7. Response serialized to JSON (OpenAPI-compliant)
+### 1. Установить PostgreSQL
 
-### Layering & Responsibilities
+```bash
+brew install postgresql@16
+brew services start postgresql@16
+```
 
-- Router: HTTP shape only (validation via schemas, status codes)
-- Service: Business rules, orchestration, error raising
-- Model: Persistence mapping (SQLAlchemy ORM)
-- Schema: External contract (input/output validation/serialization)
-- Security: Token & password utilities (hashing, JWT encode/decode)
-- Dependencies: Composable building blocks for routers
+### 2. Создать базу данных
 
-## Configuration
+```bash
+createdb db
+```
 
-Configuration is centralized in `config.py` using Pydantic BaseSettings. Environment variables (see root `.env.example`) are loaded automatically.
+Или через GUI-клиент (DBeaver, TablePlus, Postico).
 
-Add new settings by extending the Settings class and referencing them via dependency injection or direct import of the singleton instance.
+### 3. Создать файл `.env` в корне проекта
 
-Alembic is configured to use the same database URI as the FastAPI application, defined in `app/config.py`. It automatically detects models that inherit from `app.models.Base`.
+```env
+PROJECT_NAME=MyProject
+PG_HOST=localhost
+PG_PORT=5432
+PG_USER=твой_mac_username
+PG_PASSWORD=
+PG_DB=mydb
+ENVIRONMENT=dev
+```
 
+Узнать username: `whoami`
 
-## Development Workflow
+### 4. Установить зависимости
 
-1. Backend environment: set virtual environment + install deps (from /backend).
-    ```
-    python -m venv venv
-    source venv/bin/activate
-    pip install --no-cache-dir -r requirements.txt
-    ```
-2. Frontend environment: install all npm deps (from /frontend):
-   ```
-   npm install
-   ```
-3. Branch: create feature branch (e.g. feature/items-filtering).
-4. On backend, implement:
-   - models.py (data models)
-   - schemas.py (http schemas)
-   - service.py (business logic)
-   - router.py (endpoints)
-   - tests/test_<feature>.py (unit tests)
-5. Generate a migration file:
-   ```
-   alembic revision -m "Add items filtering feature"
-   ```
-6. Implement upgrade and downgrade functions in the migration file (`alembic/versions/`) . For example
-   ```python
-   def upgrade() -> None:
-        op.add_column('users', sa.Column('full_name', sa.String(length=255), nullable=True))
-    
-    def downgrade() -> None:
-        op.drop_column('users', 'full_name')
-    ```
-7. Run unit tests:
-   ```
-   python -m pytest -q
-   ```
-8. Regenerate frontend client if schemas changed:
-   ```
-   sudo bash ./scripts/generate-client.sh
-   ```
-9. Now you can rebuild docker images and re-run the application:
-   ```
-   docker-compose up --build
-   ```
-   restart service will set, seed (if neede) database and run migrations from `/alembic/versions`
+```bash
+# Создать виртуальное окружение
+python -m venv venv
+source venv/bin/activate
 
+# Установить зависимости через uv (быстрее)
+pip install uv
 
-## Database Migrations and Seeding
+uv sync
+```
 
-The project uses Alembic for database migrations and a custom seeding script for initial data.
+### 5. Запустить сервер
 
-### Automatic Initialization
+```bash
+uvicorn app.main:app --reload
+```
 
-When running with Docker Compose, the `prestart` service automatically:
-1. Runs `alembic upgrade head` to apply all pending migrations.
-2. Runs `python -m app.database.seed` to seed the database with initial data (e.g., the first superuser).
+Или:
+```bash
+python -m app.main
+```
 
-This ensures the database is always up-to-date and has the necessary initial data whenever you run `docker-compose up`.
+### 6. Открыть документацию
 
-### Manual Migrations
+- Swagger UI: http://localhost:8080/api/v1/docs
+- ReDoc: http://localhost:8080/api/v1/redoc
 
-If the containers are already running:
+## Команды PostgreSQL
 
-- **Generate a new migration**:
-  ```bash
-  docker-compose exec backend alembic revision --autogenerate -m "Add new field"
-  ```
+```bash
+# Запустить
+brew services start postgresql@16
 
-- **Apply migrations manually**:
-  ```bash
-  docker-compose exec backend alembic upgrade head
-  ```
+# Остановить
+brew services stop postgresql@16
 
-- **Seed data manually**:
-  ```bash
-  docker-compose exec backend python -m app.database.seed
-  ```
+# Перезапустить
+brew services restart postgresql@16
 
-### Local Development (without Docker)
+# Статус
+brew services list
 
-1. Run migrations:
-   ```bash
-   alembic upgrade head
-   ```
-2. Seed data:
-   ```bash
-   python -m app.database.seed
-   ```
+# Список баз данных
+psql -l
 
+# Подключиться к базе
+psql mydb
+```
 
-## Error Handling
+## Миграции (Alembic)
 
-Raise `HTTPException` in router for explicit HTTP semantics. Prefer custom exception classes in service layer then translate to HTTP errors in router if domain-specific.
+```bash
+# Применить все миграции
+alembic upgrade head
 
-## Code Style & Conventions
+# Создать новую миграцию
+alembic revision -m "описание изменений"
 
-- Keep router functions thin (< ~15 LOC ideally) with naming convention `{verb}_{subject}_{condition}`
-- Service functions: single responsibility with naming convention `{verb}_{subject}_{condition}`
-- Name Pydantic models with suffixes: <Entity>Create / <Entity>Update / <Entity>Read
-- Prefer UTC timestamps
+# Откатить последнюю миграцию
+alembic downgrade -1
+```
+
+## Что отключено (TODO)
+
+- [ ] Модуль `users` (модели, схемы, CRUD)
+- [ ] Авторизация (`auth` router)
+- [ ] Зависимости `get_current_user`, `get_current_active_user`
+- [ ] Superuser seed
+
+Эти модули будут добавлены позже при необходимости.
+
+## Конфигурация
+
+Все настройки в `app/config.py`. Переменные окружения загружаются из `.env`.
+
+| Переменная | Описание | По умолчанию |
+|------------|----------|--------------|
+| `PROJECT_NAME` | Название проекта | обязательно |
+| `PG_HOST` | Хост PostgreSQL | обязательно |
+| `PG_PORT` | Порт PostgreSQL | 5432 |
+| `PG_USER` | Пользователь БД | обязательно |
+| `PG_PASSWORD` | Пароль БД | пусто |
+| `PG_DB` | Имя базы данных | обязательно |
+| `ENVIRONMENT` | dev / test / prod | dev |
+| `HOST` | Хост сервера | 0.0.0.0 |
+| `PORT` | Порт сервера | 8080 |
+
+## Добавление нового модуля
+
+1. Создать папку `app/название_модуля/`
+2. Добавить файлы:
+   - `models.py` — SQLAlchemy модели
+   - `schemas.py` — Pydantic схемы
+   - `service.py` — бизнес-логика
+   - `router.py` — эндпоинты
+3. Подключить router в `app/main.py`
+4. Создать миграцию: `alembic revision -m "Add название_модуля"`

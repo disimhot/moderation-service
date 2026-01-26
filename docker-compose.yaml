@@ -1,0 +1,71 @@
+services:
+  db:
+    image: postgres:15
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/pgdata
+    env_file:
+      - .env
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ${PG_DB}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${PG_USER} -d ${PG_DB}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend_net
+
+  backend:
+    image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG:-latest}'
+    build:
+      context: ./backend
+    env_file:
+      - ./.env
+    environment:
+      DATABASE_URL: postgresql://${PG_USER}:${PG_PASSWORD}@db:5432/${PG_DB}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - backend_net
+
+#  classifier:
+#    image: '${DOCKER_IMAGE_CLASSIFIER?Variable not set}:${TAG:-latest}'
+#    ports:
+#      - "8090:8090"
+#    build:
+#      context: ./classifier
+#      dockerfile: Dockerfil"
+#    env_file:
+#      - ./.env
+#    environment:
+#      DATABASE_URL: postgresql://${PG_USER}:${PG_PASSWORD}@db:5432/${PG_DB}
+#    depends_on:
+#      db:
+#        condition: service_healthy
+#    restart: always
+#    networks:
+#      - backend_net
+#    logging:
+#      driver: "json-file"
+#      options:
+#        max-size: "10m"
+#        max-file: "5"
+
+networks:
+  backend_net:
+
+volumes:
+  postgres_data:
+
+
