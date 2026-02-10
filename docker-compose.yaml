@@ -28,6 +28,7 @@ services:
       - ./backend/.env
     environment:
       DATABASE_URL: postgresql://${PG_USER}:${PG_PASSWORD}@db:5432/${PG_DB}
+      CLASSIFIER_URL: http://classifier:8090
     depends_on:
       db:
         condition: service_healthy

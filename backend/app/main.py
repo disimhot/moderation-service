@@ -1,19 +1,35 @@
 import uvicorn
+import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
+
+from .api.router import router as api_router
 from .config import settings
 
 LOG_LEVEL = "debug" if settings.ENVIRONMENT == "dev" else "info"
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.http_client = httpx.AsyncClient(
+        timeout=httpx.Timeout(2.0),
+    )
+    yield
+    await app.state.http_client.aclose()
 
 # Create FastAPI app instance
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.PROJECT_VERSION,
+    lifespan=lifespan,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url=f"{settings.API_V1_STR}/docs",
     redoc_url=f"{settings.API_V1_STR}/redoc",
 )
+
+# --- Routers ---
+app.include_router(api_router, prefix=f"{settings.API_V1_STR}/classification", tags=["Classification"])
 
 # --- Middleware ---
 if settings.all_cors_origins:
