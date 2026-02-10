@@ -36,12 +36,11 @@ docker-compose up -d classifier
 cd classifier
 
 # 2. Установка зависимостей (используя uv)
-uv sync --frozen
+uv sync
 
 # 3. Настройка окружения
 cp .env.example .env
 
-<<<<<<< HEAD
 ### 4. Обучить модель
 
 ```bash

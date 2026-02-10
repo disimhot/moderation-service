@@ -57,7 +57,7 @@ docker-compose up -d backend
 ```bash
 # Установка зависимостей
 pip install uv
-uv sync --frozen
+uv sync
 
 # Запуск PostgreSQL
 docker-compose up -d db
