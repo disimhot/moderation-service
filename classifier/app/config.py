@@ -8,12 +8,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(env_file="./.env", env_file_encoding="utf-8", extra="ignore")
 
     # App settings
-    PROJECT_NAME: str = "SMS Classification API"
+    PROJECT_NAME: str = "BERT Classification API"
     PROJECT_VERSION: str = "0.1.0"
-    API_V1_STR: str = "/api/v1"
     HOST: str = "0.0.0.0"
     PORT: int = 8090
     ENVIRONMENT: Literal["dev", "test", "prod"] = "dev"
@@ -27,8 +26,8 @@ class Settings(BaseSettings):
     # ML settings
     MODEL_PATH: Path = Field(default=Path("weights/bert.pt"))
     LABEL_ENCODER_PATH: Path = Field(default=Path("data/label_encoder.json"))
-    # PRETRAINED_MODEL: str = "ai-forever/ruModernBERT-base"
-    PRETRAINED_MODEL: str = "cointegrated/rubert-tiny"
+    PRETRAINED_MODEL: str = "deepvk/RuModernBERT-small"
+    # PRETRAINED_MODEL: str = "cointegrated/rubert-tiny"
     MAX_LENGTH: int = 256
     DROPOUT: float = 0.1
 

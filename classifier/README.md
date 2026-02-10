@@ -1,87 +1,47 @@
-# SMS Classification API
+# Moderation Service Classifier
 
-REST API для классификации SMS-сообщений с использованием BERT модели.
+Сервис классификации контента для системы модерации.
 
-## Структура проекта
+## Описание
 
-```
-├── app/
-│   ├── __init__.py
-│   ├── config.py              # Настройки приложения
-│   ├── main.py                # FastAPI app
-│   │
-│   ├── api/                   # API слой
-│   │   ├── __init__.py
-│   │   ├── router.py          # Эндпоинты
-│   │   ├── schemas.py         # Pydantic схемы
-│   │   └── service.py         # Бизнес-логика API
-│   │
-│   ├── predict/               # Предсказания (для API)
-│   │   ├── __init__.py
-│   │   └── predictor.py       # Класс Predictor
-│   │
-│   ├── infer/                 # Инференс на тестовом датасете
-│   │   ├── __init__.py
-│   │   └── infer.py           # Оценка модели
-│   │
-│   ├── train/                 # Обучение модели
-│   │   ├── __init__.py
-│   │   └── train.py           # Тренировка
-│   │
-│   ├── models/                # ML модели
-│   │   ├── __init__.py
-│   │   ├── bert.py            # BERT классификатор
-│   │   ├── loss.py            # Функции потерь
-│   │   └── module.py          # PyTorch Lightning модуль
-│   │
-│   └── data/                  # Работа с данными
-│       ├── __init__.py
-│       └── dataset.py         # Загрузка и подготовка данных
-│
-├── data/                      # Данные
-│   ├── train.csv
-│   ├── val.csv
-│   ├── test.csv
-│   └── label_encoder.json
-│
-├── weights/                   # Веса модели
-│   └── bert.pt
-│
-├── main.py                    # Точка входа
-├── pyproject.toml
-├── .env.example
-└── README.md
-```
+Classifier — это микросервис, отвечающий за автоматическую классификацию и
+анализ контента. Работает в связке с основным backend-сервисом модерации,
+обрабатывая запросы на классификацию текстов, изображений или других типов
+контента.
 
-## Быстрый старт
+## Архитектура
 
-### 1. Установить зависимости
+Сервис спроектирован как независимый микросервис, который:
+
+- Получает запросы на классификацию от backend
+- Применяет ML-модели или правила для категоризации контента
+- Возвращает результаты классификации с уровнями уверенности
+
+## Запуск
+
+### Через Docker (рекомендуется)
+
+Classifier запускается в составе общего docker-compose из корня проекта:
 
 ```bash
-uv venv
-source .venv/bin/activate
-uv sync
+docker-compose up -d classifier
 ```
 
-### 2. Подготовить данные
+Сервис автоматически дождётся готовности backend перед запуском.
 
-Положить CSV файлы в папку `data/`:
-- `train.csv` — обучающая выборка
-- `val.csv` — валидационная выборка
-- `test.csv` — тестовая выборка
-
-Формат CSV:
-```csv
-text,result
-"Текст сообщения","категория"
-```
-
-### 3. Создать `.env` файл
+### Локальная разработка
 
 ```bash
+# 1. Перейдите в директорию сервиса
+cd classifier
+
+# 2. Установка зависимостей (используя uv)
+uv sync --frozen
+
+# 3. Настройка окружения
 cp .env.example .env
-```
 
+<<<<<<< HEAD
 ### 4. Обучить модель
 
 ```bash
@@ -149,45 +109,98 @@ Response:
     }
   ]
 }
+=======
+# 4. Запуск классификатора
+uv run main.py
+>>>>>>> 10b0842 ([checkpoint-1] - cope)
 ```
 
 ## Конфигурация
 
-| Переменная | Описание | По умолчанию |
-|------------|----------|--------------|
-| `PROJECT_NAME` | Название проекта | SMS Classification API |
-| `ENVIRONMENT` | dev / test / prod | dev |
-| `PORT` | Порт сервера | 8080 |
-| `DATA_DIR` | Папка с данными | data |
-| `MODEL_PATH` | Путь к весам | weights/bert.pt |
-| `PRETRAINED_MODEL` | HuggingFace модель | ai-forever/ruModernBERT-base |
-| `MAX_LENGTH` | Макс. длина токенов | 256 |
-| `BATCH_SIZE` | Размер батча | 32 |
-| `MAX_EPOCHS` | Макс. эпох | 10 |
-| `LEARNING_RATE` | Learning rate | 2e-5 |
+### Переменные окружения
 
-## Разработка
+Настройте в файле `.env`:
+
+| Переменная    | Описание            | По умолчанию          |
+| ------------- | ------------------- | --------------------- |
+| `HOST`        | Хост сервера        | `0.0.0.0`             |
+| `PORT`        | Порт сервера        | `8090`                |
+| `BACKEND_URL` | URL backend-сервиса | `http://backend:8080` |
+| `MODEL_PATH`  | Путь к ML-модели    | —                     |
+| `LOG_LEVEL`   | Уровень логирования | `INFO`                |
+
+## API
+
+### Эндпоинты
+
+| Метод  | Путь          | Описание                   |
+| ------ | ------------- | -------------------------- |
+| `POST` | `/classify`   | Классификация контента     |
+| `GET`  | `/health`     | Проверка работоспособности |
+| `GET`  | `/categories` | Список доступных категорий |
+
+### Пример запроса
 
 ```bash
-# Форматирование
-ruff format .
-
-# Линтинг
-ruff check .
-
-# Запуск с hot-reload
-uvicorn app.main:app --reload --port 8090
+curl -X POST http://localhost:8090/classify \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Текст для классификации"}'
 ```
 
-## Команды
+### Пример ответа
+
+```json
+{
+  "category": "safe",
+  "confidence": 0.95,
+  "labels": [
+    { "name": "safe", "score": 0.95 },
+    { "name": "spam", "score": 0.03 },
+    { "name": "toxic", "score": 0.02 }
+  ]
+}
+```
+
+## Docker
+
+### Dockerfile
+
+Сервис собирается из собственного Dockerfile в директории `classifier/`.
+
+### Логирование
+
+Настроено JSON-логирование с ротацией:
+
+- Максимальный размер файла: 10MB
+- Хранится до 5 файлов
+
+## Интеграция с Backend
+
+Classifier регистрируется в docker-compose с зависимостью от backend:
+
+```yaml
+classifier:
+  depends_on:
+    backend:
+      condition: service_healthy
+```
+
+Это гарантирует, что classifier запустится только после успешной инициализации
+backend.
+
+## Мониторинг
+
+### Health Check
 
 ```bash
-# Обучение
-python -m app.train
+curl http://localhost:8090/health
+```
 
-# Инференс на тесте
-python -m app.infer
+Ожидаемый ответ:
 
-# Запуск API
-python main.py
+```json
+{
+  "status": "ok",
+  "model_loaded": true
+}
 ```

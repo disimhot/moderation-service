@@ -4,8 +4,8 @@ from ..predict.predictor import LabelEncoderNotFoundError, ModelNotFoundError, P
 from .schemas import (
     ClassInfo,
     HealthResponse,
-    ModelStatus,
     ModelsInfoResponse,
+    ModelStatus,
     PredictionItem,
     PredictResponse,
 )
@@ -91,14 +91,13 @@ class ClassifierService:
         """Get information about model and classes."""
         predictor = self._get_predictor()
 
-        classes = [
-            ClassInfo(id=id_, name=name) for id_, name in sorted(predictor.id2label.items())
-        ]
+        classes = [ClassInfo(id=id_, name=name) for id_, name in sorted(predictor.id2label.items())]
 
         return ModelsInfoResponse(
             model_available=True,
             num_classes=len(predictor.id2label),
             classes=classes,
         )
+
 
 classifier_service = ClassifierService()

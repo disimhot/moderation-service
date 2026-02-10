@@ -1,6 +1,5 @@
 # Initially taken from Github's Python gitignore file
 uv.lock
-weights
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -164,7 +163,7 @@ debug.env
 tags
 
 # pre-commit
-.pre-commit*
+#.pre-commit*
 
 # .lock
 *.lock

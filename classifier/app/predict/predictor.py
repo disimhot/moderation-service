@@ -56,8 +56,7 @@ class Predictor:
 
         if not model_path.exists():
             raise ModelNotFoundError(
-                f"Model not found: {model_path}. "
-                "Please train the model first."
+                f"Model not found: {model_path}. Please train the model first."
             )
 
         # Load state dict to determine num_classes

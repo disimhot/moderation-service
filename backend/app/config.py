@@ -1,18 +1,13 @@
-import secrets
-import warnings
 from typing import Annotated, Any, Literal
 
 from pydantic import (
     AnyUrl,
     BeforeValidator,
-    EmailStr,
     PostgresDsn,
     computed_field,
-    model_validator,
 )
 from pydantic_core import MultiHostUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing_extensions import Self
 
 
 def parse_cors(v: Any) -> list[str] | str:
@@ -29,16 +24,15 @@ class Settings(BaseSettings):
         env_ignore_empty=True,
         extra="ignore",
     )
-    HOST: str = "0.0.0.0"
-    PORT: int = 8000
-    API_V1_STR: str = "/api/v1"
-    AUTH_STR: str = "/auth"
-    SECRET_KEY: str = secrets.token_urlsafe(32)
 
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
-    FRONTEND_HOST: str = "http://localhost:80"
+    # Server settings
+    HOST: str = "0.0.0.0"
+    PORT: int = 8080
+    API_V1_STR: str = "/api/v1"
     ENVIRONMENT: Literal["dev", "test", "prod"] = "dev"
 
+    # CORS settings
+    FRONTEND_HOST: str = "http://localhost:80"
     BACKEND_CORS_ORIGINS: Annotated[
         list[AnyUrl] | str, BeforeValidator(parse_cors)
     ] = []
@@ -50,16 +44,18 @@ class Settings(BaseSettings):
             self.FRONTEND_HOST
         ]
 
-    PROJECT_NAME: str
+    # Project settings
+    PROJECT_NAME: str = "Moderation Service"
     PROJECT_VERSION: str = "0.1.0"
-    PG_HOST: str
-    PG_PORT: int = 5432
-    PG_USER: str
-    PG_PASSWORD: str = ""
-    PG_DB: str = ""
-    SEED_MOCK_DATA: bool = False
 
-    @computed_field  # type: ignore[prop-decorator]
+    # Database settings
+    PG_HOST: str = "db"
+    PG_PORT: int = 5432
+    PG_USER: str = "postgres"
+    PG_PASSWORD: str = "postgres"
+    PG_DB: str = "moderation"
+
+    @computed_field
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
         return MultiHostUrl.build(
@@ -71,29 +67,5 @@ class Settings(BaseSettings):
             path=self.PG_DB,
         )
 
-    EMAIL_TEST_USER: EmailStr = "test@example.com"
-    # FIRST_SUPERUSER_USERNAME: str
-    # FIRST_SUPERUSER_PASSWORD: str
 
-    def _check_default_secret(self, var_name: str, value: str | None) -> None:
-        if value == "changethis":
-            message = (
-                f'The value of {var_name} is "changethis", '
-                "for security, please change it, at least for deployments."
-            )
-            if self.ENVIRONMENT == "dev":
-                warnings.warn(message, stacklevel=1)
-            else:
-                raise ValueError(message)
-
-    @model_validator(mode="after")
-    def _enforce_non_default_secrets(self) -> Self:
-        self._check_default_secret("PG_PASSWORD", self.PG_PASSWORD)
-        # self._check_default_secret(
-        #     "FIRST_SUPERUSER_PASSWORD", self.FIRST_SUPERUSER_PASSWORD
-        # )
-
-        return self
-
-
-settings = Settings()  # type: ignore
+settings = Settings()

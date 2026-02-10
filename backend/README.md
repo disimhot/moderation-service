@@ -1,162 +1,133 @@
-# Backend API
+# Moderation Service Backend
 
-## Обзор
+FastAPI backend для сервиса модерации контента с поддержкой PostgreSQL и
+миграциями через Alembic.
 
-Минимальный FastAPI backend с базовой структурой. Авторизация и модуль users временно отключены (будут добавлены позже).
+## Описание
+
+Backend-часть системы модерации, предоставляющая REST API для обработки и
+управления контентом. Сервис выступает центральным компонентом, координирующим
+работу с базой данных и взаимодействие с сервисом классификации.
+
+## Технологии
+
+- **Python 3.12+**
+- **FastAPI** — веб-фреймворк
+- **SQLAlchemy 2.0** — ORM
+- **Alembic** — миграции БД
+- **Pydantic v2** — валидация данных
+- **PostgreSQL 15** — база данных
+- **uv** — менеджер пакетов
 
 ## Структура проекта
 
 ```
-├── alembic/                # Миграции базы данных
-│   ├── versions/           # Файлы миграций
-│   ├── env.py              # Конфигурация Alembic
-│   └── script.py.mako      # Шаблон миграций
+backend/
 ├── app/
-│   ├── auth/               # Авторизация (временно отключена)
-│   ├── classifier/         # Модуль классификатора (в разработке)
+│   ├── api/              # API роутеры
 │   ├── database/
-│   │   ├── core.py         # Подключение к БД, сессии
-│   │   └── seed.py         # Начальные данные
-│   ├── config.py           # Настройки (из .env)
-│   ├── dependencies.py     # Зависимости FastAPI
-│   ├── main.py             # Точка входа приложения
-│   ├── models.py           # Базовые модели SQLAlchemy
-│   └── schemas.py          # Базовые Pydantic схемы
-├── scripts/
-│   └── prestart.sh         # Скрипт инициализации
-├── tests/                  # Тесты
-├── alembic.ini             # Конфиг Alembic
-├── pyproject.toml          # Зависимости проекта
-└── .env                    # Переменные окружения (создать вручную)
+│   │   ├── core.py       # Подключение к БД, сессии
+│   │   ├── check.py      # Проверка и создание БД
+│   │   └── seed.py       # Инициализация данных
+│   ├── config.py         # Настройки приложения (Pydantic Settings)
+│   ├── main.py           # Точка входа FastAPI
+│   ├── models.py         # SQLAlchemy модели
+│   └── schemas.py        # Pydantic схемы
+├── alembic/
+│   ├── versions/         # Файлы миграций
+│   └── env.py            # Конфигурация Alembic
+├── alembic.ini
+├── Dockerfile
+├── pyproject.toml
+└── .env                  # Переменные окружения (не в git)
 ```
 
-## Быстрый старт (локально на Mac)
+## Установка и запуск
 
-### 1. Установить PostgreSQL
+### Через Docker (рекомендуется)
+
+Backend запускается в составе общего docker-compose из корня проекта:
 
 ```bash
-brew install postgresql@16
-brew services start postgresql@16
+docker-compose up -d backend
 ```
 
-### 2. Создать базу данных
+### Локальная разработка
 
 ```bash
-createdb db
-```
-
-Или через GUI-клиент (DBeaver, TablePlus, Postico).
-
-### 3. Создать файл `.env` в корне проекта
-
-```env
-PROJECT_NAME=MyProject
-PG_HOST=localhost
-PG_PORT=5432
-PG_USER=твой_mac_username
-PG_PASSWORD=
-PG_DB=mydb
-ENVIRONMENT=dev
-```
-
-Узнать username: `whoami`
-
-### 4. Установить зависимости
-
-```bash
-# Создать виртуальное окружение
-python -m venv venv
-source venv/bin/activate
-
-# Установить зависимости через uv (быстрее)
+# Установка зависимостей
 pip install uv
+uv sync --frozen
 
-uv sync
+# Запуск PostgreSQL
+docker-compose up -d db
+
+# Настройка окружения
+cp .env.example .env
+# Изменить PG_HOST=localhost в .env
+
+# Запуск сервера
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8080
 ```
 
-### 5. Запустить сервер
+## Переменные окружения
 
-```bash
-uvicorn app.main:app --reload
-```
+| Переменная             | Описание                        | По умолчанию          |
+| ---------------------- | ------------------------------- | --------------------- |
+| `HOST`                 | Хост сервера                    | `0.0.0.0`             |
+| `PORT`                 | Порт сервера                    | `8000`                |
+| `ENVIRONMENT`          | Окружение (`dev`/`test`/`prod`) | `dev`                 |
+| `API_V1_STR`           | Префикс API                     | `/api/v1`             |
+| `PROJECT_NAME`         | Название проекта                | `Moderation Service`  |
+| `PG_HOST`              | Хост PostgreSQL                 | `db`                  |
+| `PG_PORT`              | Порт PostgreSQL                 | `5432`                |
+| `PG_USER`              | Пользователь БД                 | `postgres`            |
+| `PG_PASSWORD`          | Пароль БД                       | `postgres`            |
+| `PG_DB`                | Имя базы данных                 | `moderation`          |
+| `FRONTEND_HOST`        | URL фронтенда (CORS)            | `http://localhost:80` |
+| `BACKEND_CORS_ORIGINS` | Дополнительные CORS origins     | `[]`                  |
 
-Или:
-```bash
-python -m app.main
-```
+## API Endpoints
 
-### 6. Открыть документацию
+| Метод | Путь      | Описание                   |
+| ----- | --------- | -------------------------- |
+| `GET` | `/`       | Информация об API          |
+| `GET` | `/health` | Проверка работоспособности |
 
-- Swagger UI: http://localhost:8080/api/v1/docs
-- ReDoc: http://localhost:8080/api/v1/redoc
+### Документация API
 
-## Команды PostgreSQL
+После запуска доступны:
 
-```bash
-# Запустить
-brew services start postgresql@16
+- **Swagger UI**: http://localhost:8080/api/v1/docs
+- **ReDoc**: http://localhost:8080/api/v1/redoc
+- **OpenAPI JSON**: http://localhost:8080/api/v1/openapi.json
 
-# Остановить
-brew services stop postgresql@16
-
-# Перезапустить
-brew services restart postgresql@16
-
-# Статус
-brew services list
-
-# Список баз данных
-psql -l
-
-# Подключиться к базе
-psql mydb
-```
-
-## Миграции (Alembic)
+## Миграции базы данных
 
 ```bash
 # Применить все миграции
-alembic upgrade head
+docker-compose exec backend alembic upgrade head
 
 # Создать новую миграцию
-alembic revision -m "описание изменений"
+docker-compose exec backend alembic revision --autogenerate -m "описание изменений"
 
 # Откатить последнюю миграцию
-alembic downgrade -1
+docker-compose exec backend alembic downgrade -1
+
+# Посмотреть текущую версию
+docker-compose exec backend alembic current
+
+# История миграций
+docker-compose exec backend alembic history
 ```
 
-## Что отключено (TODO)
+## Health Check
 
-- [ ] Модуль `users` (модели, схемы, CRUD)
-- [ ] Авторизация (`auth` router)
-- [ ] Зависимости `get_current_user`, `get_current_active_user`
-- [ ] Superuser seed
+Эндпоинт `/health` используется Docker для проверки готовности сервиса:
 
-Эти модули будут добавлены позже при необходимости.
-
-## Конфигурация
-
-Все настройки в `app/config.py`. Переменные окружения загружаются из `.env`.
-
-| Переменная | Описание | По умолчанию |
-|------------|----------|--------------|
-| `PROJECT_NAME` | Название проекта | обязательно |
-| `PG_HOST` | Хост PostgreSQL | обязательно |
-| `PG_PORT` | Порт PostgreSQL | 5432 |
-| `PG_USER` | Пользователь БД | обязательно |
-| `PG_PASSWORD` | Пароль БД | пусто |
-| `PG_DB` | Имя базы данных | обязательно |
-| `ENVIRONMENT` | dev / test / prod | dev |
-| `HOST` | Хост сервера | 0.0.0.0 |
-| `PORT` | Порт сервера | 8080 |
-
-## Добавление нового модуля
-
-1. Создать папку `app/название_модуля/`
-2. Добавить файлы:
-   - `models.py` — SQLAlchemy модели
-   - `schemas.py` — Pydantic схемы
-   - `service.py` — бизнес-логика
-   - `router.py` — эндпоинты
-3. Подключить router в `app/main.py`
-4. Создать миграцию: `alembic revision -m "Add название_модуля"`
+```json
+{
+  "status": "ok",
+  "version": "0.1.0"
+}
+```

@@ -4,24 +4,18 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 
-if settings.ENVIRONMENT == "dev":
-    LOG_LEVEL = "debug"  # Set log level to debug for local development
-else:
-    LOG_LEVEL = "info"
+LOG_LEVEL = "debug" if settings.ENVIRONMENT == "dev" else "info"
 
 # Create FastAPI app instance
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.PROJECT_VERSION,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",  # Customize OpenAPI path
-    docs_url=f"{settings.API_V1_STR}/docs",  # Customize Swagger UI path
-    redoc_url=f"{settings.API_V1_STR}/redoc",  # Customize ReDoc path
-    token_url=f"{settings.AUTH_STR}/token",  # Customize token URL
+    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    docs_url=f"{settings.API_V1_STR}/docs",
+    redoc_url=f"{settings.API_V1_STR}/redoc",
 )
 
 # --- Middleware ---
-# Set up CORS (Cross-Origin Resource Sharing)
-# Set all CORS enabled origins
 if settings.all_cors_origins:
     app.add_middleware(
         CORSMiddleware,
@@ -31,21 +25,11 @@ if settings.all_cors_origins:
         allow_headers=["*"],
     )
 
-# --- Routers ---
-# Resource routers (one or more)
-
-# Authorization router
-# app.include_router(
-#     auth_router, prefix=settings.AUTH_STR, tags=["Authorization & Profile"]
-# )
-
 
 # --- Root Endpoint ---
 @app.get("/", tags=["Root"])
 async def read_root():
-    """
-    Root endpoint providing basic API information.
-    """
+    """Root endpoint providing basic API information."""
     return {
         "message": f"Welcome to the {settings.PROJECT_NAME} API",
         "version": settings.PROJECT_VERSION,
@@ -55,19 +39,11 @@ async def read_root():
 
 
 # --- Health Check Endpoint ---
-@app.head("/health", tags=["Health Check"])
-async def head_root():
-    """
-    Root endpoint providing health check via HEAD request.
-    This endpoint can be used to check if the API is up and running.
-    """
-    return {
-        "status": "OK",
-        "version": settings.PROJECT_VERSION
-    }
+@app.get("/health", tags=["Health Check"])
+async def health_check():
+    """Health check endpoint."""
+    return {"status": "ok", "version": settings.PROJECT_VERSION}
 
 
 if __name__ == "__main__":
-
-    # Run the app with Uvicorn if this file is executed directly
     uvicorn.run(app, host=settings.HOST, port=settings.PORT, log_level=LOG_LEVEL)

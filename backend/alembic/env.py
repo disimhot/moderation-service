@@ -1,6 +1,7 @@
 # Because alembic/ is outside of app/, we need to add app/ to the Python path.
 import sys
 from os.path import abspath, dirname
+
 sys.path.insert(0, dirname(dirname(abspath(__file__))))
 
 from logging.config import fileConfig
@@ -75,9 +76,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

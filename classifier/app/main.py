@@ -7,10 +7,7 @@ from .api.router import router as api_router
 from .api.service import classifier_service
 from .config import settings
 
-if settings.ENVIRONMENT == "dev":
-    LOG_LEVEL = "debug"
-else:
-    LOG_LEVEL = "info"
+LOG_LEVEL = "debug" if settings.ENVIRONMENT == "dev" else "info"
 
 
 @asynccontextmanager
@@ -24,14 +21,14 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.PROJECT_VERSION,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    docs_url=f"{settings.API_V1_STR}/docs",
-    redoc_url=f"{settings.API_V1_STR}/redoc",
+    openapi_url="/openapi.json",
+    docs_url="/docs",
+    redoc_url="/redoc",
     lifespan=lifespan,
 )
 
 # Routers
-app.include_router(api_router, prefix=settings.API_V1_STR, tags=["Classification"])
+app.include_router(api_router, tags=["Classification"])
 
 
 @app.get("/", tags=["Root"])
@@ -39,7 +36,7 @@ async def read_root():
     return {
         "message": f"Welcome to the {settings.PROJECT_NAME}",
         "version": settings.PROJECT_VERSION,
-        "docs_url": f"{settings.API_V1_STR}/docs",
+        "docs_url": "/docs",
     }
 
 

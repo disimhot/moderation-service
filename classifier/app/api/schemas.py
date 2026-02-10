@@ -20,7 +20,9 @@ class PredictionItem(BaseModel):
     label: str = Field(..., description="Predicted class label")
     label_id: int = Field(..., description="Predicted class ID")
     confidence: float = Field(..., ge=0, le=1, description="Prediction confidence")
-    probabilities: dict[str, float] | None = Field(default=None, description="Probabilities for all classes")
+    probabilities: dict[str, float] | None = Field(
+        default=None, description="Probabilities for all classes"
+    )
 
 
 class PredictResponse(BaseModel):

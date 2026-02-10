@@ -5,14 +5,14 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/pgdata
     env_file:
-      - .env
+      - ./backend/.env
     environment:
       PGDATA: /var/lib/postgresql/data/pgdata
       POSTGRES_USER: ${PG_USER}
       POSTGRES_PASSWORD: ${PG_PASSWORD}
       POSTGRES_DB: ${PG_DB}
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${PG_USER} -d ${PG_DB}" ]
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER} -d ${PG_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -20,11 +20,12 @@ services:
       - backend_net
 
   backend:
-    image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG:-latest}'
     build:
       context: ./backend
+    ports:
+      - "8080:8080"
     env_file:
-      - ./.env
+      - ./backend/.env
     environment:
       DATABASE_URL: postgresql://${PG_USER}:${PG_PASSWORD}@db:5432/${PG_DB}
     depends_on:
@@ -32,7 +33,7 @@ services:
         condition: service_healthy
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -40,14 +41,13 @@ services:
       - backend_net
 
   classifier:
-    image: '${DOCKER_IMAGE_CLASSIFIER?Variable not set}:${TAG:-latest}'
     ports:
       - "8090:8090"
+    env_file:
+      - ./classifier/.env
     build:
       context: ./classifier
       dockerfile: Dockerfile
-    env_file:
-      - ./.env
     depends_on:
       backend:
         condition: service_healthy
@@ -65,5 +65,3 @@ networks:
 
 volumes:
   postgres_data:
-
-

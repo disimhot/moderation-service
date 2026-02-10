@@ -1,11 +1,8 @@
 """Shared models and mixins for the Dispatch application."""
 
-from datetime import datetime, timezone
-
 from pydantic import Field, StringConstraints
 
-from sqlalchemy import Column, DateTime, Integer, event, ForeignKey
-from sqlalchemy.orm import declared_attr, declarative_base, relationship
+from sqlalchemy.orm import declarative_base
 from typing_extensions import Annotated
 
 # pydantic type that limits the range of primary keys
