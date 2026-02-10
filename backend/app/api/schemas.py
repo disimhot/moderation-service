@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 
+
 class PredictRequest(BaseModel):
     """Request body for prediction endpoint."""
 
@@ -29,11 +30,13 @@ class PredictResponse(BaseModel):
 
     predictions: list[PredictionItem]
 
+
 class ClassInfo(BaseModel):
     """Information about a classification class."""
 
     id: int
     name: str
+
 
 class ModelsInfoResponse(BaseModel):
     """Response body for models info endpoint."""

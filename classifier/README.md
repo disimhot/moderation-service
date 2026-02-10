@@ -31,7 +31,7 @@ docker-compose up -d classifier
 
 ### Локальная разработка
 
-```bash
+````bash
 # 1. Перейдите в директорию сервиса
 cd classifier
 
@@ -45,9 +45,10 @@ cp .env.example .env
 
 ```bash
 python -m app.train
-```
+````
 
 После обучения появятся:
+
 - `weights/bert.pt` — веса модели
 - `data/label_encoder.json` — маппинг классов
 
@@ -71,31 +72,33 @@ uvicorn app.main:app --reload
 ## API Эндпоинты
 
 ### Health Check
+
 ```
 GET /health
 ```
 
 ### Model Info
+
 ```
 GET /api/v1/models
 ```
 
 ### Predict
+
 ```
 POST /api/v1/predict
 ```
 
 Request:
+
 ```json
 {
-  "texts": [
-    "Скидка 50% на все товары!",
-    "Привет, как дела?"
-  ]
+  "texts": ["Скидка 50% на все товары!", "Привет, как дела?"]
 }
 ```
 
 Response:
+
 ```json
 {
   "predictions": [

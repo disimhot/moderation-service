@@ -7,10 +7,13 @@ CLASSIFIER_URL = os.getenv("CLASSIFIER_URL")
 
 router = APIRouter()
 
-@router.post("/predict",
-             summary="Classify texts",
-             description="Classify texts using BERT model",
-             response_model=schemas.PredictionResponse)
+
+@router.post(
+    "/predict",
+    summary="Classify texts",
+    description="Classify texts using BERT model",
+    response_model=schemas.PredictionResponse,
+)
 async def predict(request: schemas.PredictRequest, req: Request):
     """Predict classes for input texts."""
     client = req.app.state.http_client
@@ -40,11 +43,13 @@ async def predict(request: schemas.PredictRequest, req: Request):
 
     return response.json()
 
-@router.get("/models",
-            response_model=schemas.ModelsInfoResponse,
-            summary="Get model info",
-            description="Get information about available model and classes",
-            )
+
+@router.get(
+    "/models",
+    response_model=schemas.ModelsInfoResponse,
+    summary="Get model info",
+    description="Get information about available model and classes",
+)
 async def models_info(req: Request):
     """Get information about available model and classes."""
     client = req.app.state.http_client
