@@ -14,7 +14,7 @@ LOG_LEVEL = "debug" if settings.ENVIRONMENT == "dev" else "info"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.http_client = httpx.AsyncClient(
-        timeout=httpx.Timeout(2.0),
+        timeout=httpx.Timeout(60.0),
     )
     yield
     await app.state.http_client.aclose()
@@ -31,9 +31,7 @@ app = FastAPI(
 )
 
 # --- Routers ---
-app.include_router(
-    api_router, prefix=f"{settings.API_V1_STR}/classification", tags=["Classification"]
-)
+app.include_router(api_router, prefix=f"{settings.API_V1_STR}", tags=["Classification"])
 
 # --- Middleware ---
 if settings.all_cors_origins:

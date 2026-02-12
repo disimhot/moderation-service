@@ -9,10 +9,10 @@ router = APIRouter()
 
 
 @router.post(
-    "/predict",
+    "/classify",
     summary="Classify texts",
     description="Classify texts using BERT model",
-    response_model=schemas.PredictionResponse,
+    response_model=schemas.PredictResponse,
 )
 async def predict(request: schemas.PredictRequest, req: Request):
     """Predict classes for input texts."""

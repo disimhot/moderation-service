@@ -18,7 +18,7 @@ router = APIRouter()
     description="Get information about available model and classes",
     responses={503: {"model": ErrorResponse, "description": "Model not available"}},
 )
-async def models_info():
+def models_info():
     """Get information about available model and classes."""
     return classifier_service.get_models_info()
 
@@ -33,6 +33,6 @@ async def models_info():
         503: {"model": ErrorResponse, "description": "Model not available"},
     },
 )
-async def predict(request: PredictRequest):
+def predict(request: PredictRequest):
     """Classify texts using BERT model."""
     return classifier_service.predict(request.texts)

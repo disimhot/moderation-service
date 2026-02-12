@@ -61,7 +61,7 @@ python -m app.infer
 ### 6. Запустить API
 
 ```bash
-uvicorn app.main:app --reload
+uv run uvicorn app.main:app --host 0.0.0.0 --port 8090
 ```
 
 ### 7. Открыть документацию
