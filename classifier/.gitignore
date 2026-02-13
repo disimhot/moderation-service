@@ -6,9 +6,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# C extensions
 *.so
-
+*.csv
 # tests and logs
 tests/fixtures/cached_*_text.txt
 logs/
@@ -148,7 +147,6 @@ runs
 
 # data
 /tmp
-/data
 serialization_dir
 *.db
 
