@@ -18,7 +18,25 @@ services:
       retries: 5
     networks:
       - backend_net
-
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672" # AMQP протокол (для Celery)
+      - "15672:15672" # Web-панель управления
+    env_file:
+      - ./backend/.env
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend_net
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
   backend:
     build:
       context: ./backend
@@ -32,6 +50,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     restart: always
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
@@ -40,12 +60,33 @@ services:
       retries: 3
     networks:
       - backend_net
-
+  celery_worker:
+    build:
+      context: ./backend
+    command: uv run celery -A app.celery_app worker --loglevel=info
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql://${PG_USER}:${PG_PASSWORD}@db:5432/${PG_DB}
+      CELERY_BROKER_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672//
+      CLASSIFIER_URL: http://classifier:8090
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: always
+    networks:
+      - backend_net
   classifier:
     ports:
       - "8090:8090"
     env_file:
       - ./classifier/.env
+    environment:
+      HF_HOME: /app/.cache/huggingface
+    volumes:
+      - hf_cache:/app/.cache/huggingface
     build:
       context: ./classifier
       dockerfile: Dockerfile
@@ -66,3 +107,5 @@ networks:
 
 volumes:
   postgres_data:
+  rabbitmq_data:
+  hf_cache:

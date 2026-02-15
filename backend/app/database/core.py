@@ -33,7 +33,6 @@ def get_db() -> Generator[Session, None, None]:
         session.close()
 
 
-# Init database schema via Base.metadata.create_all
 def init_db() -> None:
     try:
         Base.metadata.create_all(bind=engine)
@@ -41,8 +40,6 @@ def init_db() -> None:
     except Exception as e:
         logger.error(f"Error initializing database: {e}")
         raise
-    finally:
-        engine.dispose()
 
 
 # Drop all tables

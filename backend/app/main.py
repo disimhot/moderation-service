@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-
+from .database.core import init_db
 from .api.router import router as api_router
 from .config import settings
 
@@ -13,6 +13,7 @@ LOG_LEVEL = "debug" if settings.ENVIRONMENT == "dev" else "info"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    init_db()
     app.state.http_client = httpx.AsyncClient(
         timeout=httpx.Timeout(60.0),
     )

@@ -148,6 +148,7 @@ runs
 /data
 serialization_dir
 *.db
+*.zip
 
 # emacs
 *.*~

@@ -1,17 +1,30 @@
-"""Shared models and mixins for the Dispatch application."""
-
-from pydantic import Field, StringConstraints
-
+import datetime
+from sqlalchemy import Column, String, DateTime, JSON, Enum as SAEnum
 from sqlalchemy.orm import declarative_base
-from typing_extensions import Annotated
-
-# pydantic type that limits the range of primary keys
-PrimaryKey = Annotated[int, Field(gt=0, lt=2147483647)]
-NameStr = Annotated[
-    str, StringConstraints(pattern=r".*\S.*", strip_whitespace=True, min_length=3)
-]
-OrganizationSlug = Annotated[
-    str, StringConstraints(pattern=r"^[\w]+(?:_[\w]+)*$", min_length=3)
-]
+import enum
 
 Base = declarative_base()
+
+
+class TaskStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    PROCESSING = "PROCESSING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+
+
+class ClassificationTask(Base):
+    __tablename__ = "classification_tasks"
+
+    task_id = Column(String, primary_key=True)  # Celery task ID
+    status = Column(SAEnum(TaskStatus), default=TaskStatus.PENDING, nullable=False)
+    texts = Column(JSON, nullable=False)
+    result = Column(JSON, nullable=True)
+    error = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+    updated_at = Column(
+        DateTime,
+        default=datetime.datetime.utcnow,
+        onupdate=datetime.datetime.utcnow,
+        nullable=False,
+    )
