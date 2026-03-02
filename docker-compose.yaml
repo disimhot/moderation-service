@@ -40,8 +40,8 @@ services:
   backend:
     build:
       context: ./backend
-    ports:
-      - "8080:8080"
+    #    ports:
+    #      - "8080:8080"
     env_file:
       - ./backend/.env
     environment:
@@ -79,8 +79,8 @@ services:
     networks:
       - backend_net
   classifier:
-    ports:
-      - "8090:8090"
+    #    ports:
+    #      - "8090:8090"
     env_file:
       - ./classifier/.env
     environment:
@@ -90,9 +90,6 @@ services:
     build:
       context: ./classifier
       dockerfile: Dockerfile
-    depends_on:
-      backend:
-        condition: service_healthy
     restart: always
     networks:
       - backend_net
@@ -101,6 +98,17 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
+  nginx:
+    build:
+      context: ./nginx
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: always
+    networks:
+      - backend_net
 
 networks:
   backend_net:
