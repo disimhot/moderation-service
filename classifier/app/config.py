@@ -27,7 +27,6 @@ class Settings(BaseSettings):
     MODEL_PATH: Path = Field(default=Path("weights/bert.pt"))
     LABEL_ENCODER_PATH: Path = Field(default=Path("data/label_encoder.json"))
     PRETRAINED_MODEL: str = "deepvk/RuModernBERT-small"
-    # PRETRAINED_MODEL: str = "cointegrated/rubert-tiny"
     MAX_LENGTH: int = 256
     DROPOUT: float = 0.1
 
@@ -40,6 +39,11 @@ class Settings(BaseSettings):
     # Logging settings
     MLFLOW_TRACKING_URI: str = "mlruns"
     MLFLOW_EXPERIMENT_NAME: str = "sms-classification"
+
+    # HuggingFace settings
+    HF_REPO_ID: str = "lena123456/text-classifier"
+    HF_TOKEN: str | None = None
+    WEIGHTS_DIR: Path = Field(default=Path("weights"))
 
 
 settings = Settings()

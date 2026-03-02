@@ -79,8 +79,8 @@ services:
     networks:
       - backend_net
   classifier:
-    #    ports:
-    #      - "8090:8090"
+    ports:
+      - "8090:8090"
     env_file:
       - ./classifier/.env
     environment:
