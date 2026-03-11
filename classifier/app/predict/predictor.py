@@ -1,13 +1,10 @@
-import json
 from pathlib import Path
 
 import torch
 from huggingface_hub import hf_hub_download
-from safetensors.torch import load_file
-from transformers import AutoConfig, AutoModelForSequenceClassification
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from ..config import settings
-from ..models.bert import BertClassifier, BertTokenizerWrapper
 
 
 class ModelNotFoundError(Exception):
@@ -22,32 +19,27 @@ class Predictor:
     """
     Predictor for SMS classification using BERT.
 
-    Loads model weights from local files or HuggingFace Hub.
+    Loads model from HuggingFace Hub.
     """
 
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model: BertClassifier | None = None
-        self.tokenizer: BertTokenizerWrapper | None = None
+        self.model = None
+        self.tokenizer = None
         self.id2label: dict[int, str] = {}
         self.label2id: dict[str, int] = {}
         self._hf_paths: dict[str, str] = {}
 
     def load(self) -> None:
-        """Load model and label encoder (local first, then HuggingFace)."""
+        """Load model and label encoder from HuggingFace."""
         self._ensure_weights()
         self._load_label_encoder()
         self._load_model()
 
     def _resolve_file(self, filename: str) -> Path | None:
-        """Find file: first in HF cache paths, then in local weights dir."""
+        """Find file in HF cache paths."""
         if filename in self._hf_paths:
             return Path(self._hf_paths[filename])
-
-        local_path = Path(settings.WEIGHTS_DIR) / filename
-        if local_path.exists():
-            return local_path
-
         return None
 
     def _ensure_weights(self) -> None:
@@ -65,7 +57,7 @@ class Predictor:
         print("All model files ready (from cache or downloaded).")
 
     def _load_label_encoder(self) -> None:
-        """Load label encoder from id2label.pt or label_encoder.json."""
+        """Load label encoder from id2label.pt."""
         id2label_path = self._resolve_file("id2label.pt")
 
         if id2label_path is not None:
@@ -75,113 +67,44 @@ class Predictor:
             print(f"Label encoder loaded from {id2label_path} ({len(self.id2label)} classes)")
             return
 
-        # Fallback: label_encoder.json
-        encoder_path = Path(settings.LABEL_ENCODER_PATH)
-
-        if encoder_path.exists():
-            with encoder_path.open(encoding="utf-8") as f:
-                data = json.load(f)
-            self.id2label = {int(k): v for k, v in data["id2label"].items()}
-            self.label2id = data["label2id"]
-            print(f"Label encoder loaded from {encoder_path} ({len(self.id2label)} classes)")
-            return
-
-        raise LabelEncoderNotFoundError(
-            "Label encoder not found. Expected id2label.pt in weights/ "
-            "or label_encoder.json in data/."
-        )
+        raise LabelEncoderNotFoundError("Label encoder not found. Expected id2label.pt in HF repo.")
 
     def _load_model(self) -> None:
-        """Load BERT model weights from safetensors or pt format."""
-        safetensors_path = self._resolve_file("model.safetensors")
-        pt_path = Path(settings.MODEL_PATH)
+        """Load model from HuggingFace cache directory."""
+        config_path = self._resolve_file("config.json")
+        model_dir = str(config_path.parent)
 
-        if safetensors_path is not None:
-            state_dict = load_file(str(safetensors_path), device=str(self.device))
-            print(f"Loaded weights from {safetensors_path}")
-        elif pt_path.exists():
-            state_dict = torch.load(pt_path, weights_only=True, map_location=self.device)
-            print(f"Loaded weights from {pt_path}")
-        else:
-            raise ModelNotFoundError("Model not found. Check HF_REPO_ID and HF_TOKEN settings.")
-
-        num_classes = len(self.id2label)
-        is_hf_format = any(k.startswith("model.") for k in state_dict)
-
-        # Initialize tokenizer
-        self.tokenizer = BertTokenizerWrapper(
-            pretrained_model=settings.PRETRAINED_MODEL,
-            max_length=settings.MAX_LENGTH,
+        self.model = AutoModelForSequenceClassification.from_pretrained(
+            model_dir,
+            id2label=self.id2label,
+            label2id=self.label2id,
+            local_files_only=True,
         )
+        self.model.to(self.device)
+        self.model.eval()
 
-        if is_hf_format:
-            # HuggingFace ModernBertForSequenceClassification format
-            config_path = self._resolve_file("config.json")
-            model_dir = str(config_path.parent) if config_path else settings.PRETRAINED_MODEL
+        self.tokenizer = AutoTokenizer.from_pretrained(settings.PRETRAINED_MODEL)
 
-            config = AutoConfig.from_pretrained(
-                model_dir,
-                num_labels=num_classes,
-                id2label=self.id2label,
-                label2id=self.label2id,
-            )
-
-            self.model = AutoModelForSequenceClassification.from_config(config)
-            self.model.load_state_dict(state_dict)
-            self.model.to(self.device)
-            self.model.eval()
-            self._predict_fn = self._predict_hf
-            print("Model loaded in HuggingFace format.")
-
-            print("Model loaded in HuggingFace format.")
-        else:
-            # Custom BertClassifier format
-            self.model = BertClassifier(
-                num_classes=num_classes,
-                pretrained_model=settings.PRETRAINED_MODEL,
-                dropout=settings.DROPOUT,
-            )
-            self.model.load_state_dict(state_dict)
-            self.model.to(self.device)
-            self.model.eval()
-            self._predict_fn = self._predict_custom
-            print("Model loaded in custom format.")
+        print("Model loaded in HuggingFace format.")
 
     @torch.no_grad()
     def predict(self, texts: list[str]) -> list[dict]:
-        """
-        Predict classes for input texts.
-
-        Args:
-            texts: List of texts to classify
-
-        Returns:
-            List of prediction dictionaries
-        """
+        """Predict classes for input texts."""
         if self.model is None or self.tokenizer is None:
             raise RuntimeError("Model not loaded. Call load() first.")
 
-        return self._predict_fn(texts)
-
-    def _predict_custom(self, texts: list[str]) -> list[dict]:
-        """Predict using custom BertClassifier."""
-        inputs = self.tokenizer(texts)
-        inputs = {k: v.to(self.device) for k, v in inputs.items()}
-
-        logits = self.model(inputs)
-        return self._format_results(texts, logits)
-
-    def _predict_hf(self, texts: list[str]) -> list[dict]:
-        """Predict using HuggingFace model."""
-        inputs = self.tokenizer(texts)
+        inputs = self.tokenizer(
+            texts,
+            padding=True,
+            truncation=True,
+            max_length=settings.MAX_LENGTH,
+            return_tensors="pt",
+        )
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
         outputs = self.model(**inputs)
         logits = outputs.logits
-        return self._format_results(texts, logits)
 
-    def _format_results(self, texts: list[str], logits: torch.Tensor) -> list[dict]:
-        """Format prediction results."""
         probs = torch.softmax(logits, dim=1)
         confidences, pred_ids = torch.max(probs, dim=1)
 
@@ -207,7 +130,4 @@ class Predictor:
 
     def get_model_path(self) -> str:
         """Return path to model weights."""
-        safetensors_path = self._resolve_file("model.safetensors")
-        if safetensors_path is not None:
-            return str(safetensors_path)
-        return str(settings.MODEL_PATH)
+        return str(self._resolve_file("model.safetensors") or "unknown")

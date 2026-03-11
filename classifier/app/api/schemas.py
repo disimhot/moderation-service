@@ -9,7 +9,7 @@ class PredictRequest(BaseModel):
         min_length=1,
         max_length=100,
         description="List of texts to classify (1-100 items)",
-        examples=[["Скидка 50% на все услуги до конца месяца"]],
+        examples=[["Скидка 50% на все услуги до конца месяца на фитнес"]],
     )
 
 

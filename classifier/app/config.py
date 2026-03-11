@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     # ML settings
     MODEL_PATH: Path = Field(default=Path("weights/bert.pt"))
     LABEL_ENCODER_PATH: Path = Field(default=Path("data/label_encoder.json"))
-    PRETRAINED_MODEL: str = "deepvk/RuModernBERT-small"
+    PRETRAINED_MODEL: str = "deepvk/RuModernBERT-base"
     MAX_LENGTH: int = 256
     DROPOUT: float = 0.1
 
