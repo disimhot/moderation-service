@@ -106,10 +106,6 @@ class Predictor:
             raise ModelNotFoundError("Model not found. Check HF_REPO_ID and HF_TOKEN settings.")
 
         num_classes = len(self.id2label)
-
-        # Detect model structure from state_dict keys
-        # HuggingFace format: keys start with "model." (e.g. "model.encoder.layers...")
-        # Custom format: keys start with "bert." or "classifier." (e.g. "bert.encoder...")
         is_hf_format = any(k.startswith("model.") for k in state_dict)
 
         # Initialize tokenizer
